@@ -1,0 +1,111 @@
+
+Research question:
+
+Is Tesco slogan "every little help" really beneficial for students?
+
+Every day, 3 meals, adults need approximately 1600 kcal. We also need minerals and other vitamins. 
+
+For that, we plan out 3 meals for student:
+
+Breakfast:
+Milk, toasts/pan, 2 eggs, peanut butter, banana
+
+Lunch:
+Rice, spagatti, chicken fillets 100g, veg mix, 100g
+
+Dinner:
+Rice, spagatti, sausage, veg mix 100g, Yogurt
+
+Which retailer is cost-effective and nutritious enough for students?
+
+# Application:
+
+Compare a basket of goods:
+
+1. peanut butter
+2. toasts/ pans
+3. mlik
+4. Oliver oil
+5. Yogurt
+6. eggs
+7. butter
+
+of 
+1. calories-wise, which one is most cost-effective? 100g/calories per kilogram
+2. for the above 7 items, average
+
+# Crawler implementations
+
+the core API is [open food facts](https://world.openfoodfacts.org/product/4088600494784/smooth-peanut-butter) 
+
+
+open food facts database:
+1. in db, select by the retailer. and use that product name to create another database specific to that retailer
+
+retailer db:
+create new database, for aldi and Tesco respectively
+1. use the product name from open food facts
+2. send req to the retailer website, crawls all the required data
+    1. price per kg
+    2. nutrition facts
+    3. barcode, if possible
+    4. catogory (use breadcrumb to provide catogory)
+3. when user provides a list of goods, search through 2 retailers db, give the statistics.
+
+```python
+tesco_crawler = TescoCrawler()
+aldi_crawler = AldiCrawler()
+
+ # item has 2 attributes of price: 1 at tesco, 1 at aldi
+item = Item('item_name')
+item = tesco_crawler.search_and_append(item, num=8)
+item = aldi_crawler.search_and_append(item, num=8)
+
+item.aldi_results_list
+```
+
+## Aldi crawler
+for aldi, use the *barcode*, it can easily be searched in the aldi URL. `https://groceries.aldi.ie/en-GB/Search?keywords=[barcode]`
+
+## Tesco crawler
+first, check if the product is not seasonal at [digit eye](https://www.digit-eyes.com/cgi-bin/digiteyes.cgi?upcCode=5000119511027&action=lookupUpc&go=Go%21) 
+
+parse the response. most desired data can be fetched in the reponse html.
+
+# challenges
+
+1. brand name and product search results provide unrelated products
+2. products that sell in different countries.
+3. Wrong product names [https://world.openfoodfacts.org/product/5000108171553/apple-and-raspberry-water-quaker]
+4. some image recognition result is wrong.
+
+
+When search for a product, the program first has to search for the data in Open food API. For Olive oil, it might give you a lot of products related to it.
+[olive oil](https://world.openfoodfacts.org/cgi/search.pl?search_terms=olive+oil+tesco&search_simple=1&action=process)
+
+For this, there are: "Extra virgin olive oil houmous" and "Mackerel in Extra Virgin Olive Oil" of fish can. These are not the Olive oil we want to search for. 
+
+The naming for each data entity is upon on user's shoulder. Hence, there is no real standard for that.
+
+To solve this problem, there is a solution.
+
+Even though we cannot simply use product name, but nutrition facts are very much different. Olive oil can't provide some nutrition that Fish can provide. Therefore, select 10 entities of that product, and find the most common nutrition facts, it will help to identity the product we're searching for.
+
+Then we use that barcode to search in Tesco.
+
+| product      | unit_price | selling_price |
+|--------------|------------|---------------|
+| Tesco yogurt | 4.678      | 1.995         |
+| Aldi yogurt  | 4.829      | 1.466         |
+| Tesco butter | 6.695      | 2.287         |
+| Aldi butter  | 7.034      | 2.898         |
+| Tesco eggs   | 0.576      | 3.618         |
+| Aldi eggs    | 0.297      | 2.822         |
+| Tesco milk   | 1.893      | 1.985         |
+| Aldi milk    | 1.242      | 1.799         |
+| Tesco bread  | 3.060      | 1.994         |
+| Aldi bread   | 4.169      | 1.618         |
+| Tesco rice   | 6.544      | 2.640         |
+| Aldi rice    | 4.010      | 0.927         |
+| Tesco veg    | 3.585      | 1.976         |
+| Aldi veg     | 2.059      | 1.168         |
